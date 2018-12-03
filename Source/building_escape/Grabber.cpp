@@ -9,6 +9,7 @@
 #include "DrawDebugHelpers.h"
 #include "Math/Color.h"
 #include "Engine/EngineTypes.h"
+#include "Components/PrimitiveComponent.h"
 
 #define OUT
 
@@ -38,8 +39,11 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	
-
+	FVector LTEnd = LineTraceEnd();
+	if (PhysicsHandle->GrabbedComponent)
+	{
+		PhysicsHandle->SetTargetLocation(LTEnd);
+	 }
 	
 
 }
@@ -47,13 +51,20 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 void UGrabber::Grab()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Grab key pressed!"))
-	ReturnFirstPhysicsBodyinReach();
+	auto HitResult = ReturnFirstPhysicsBodyinReach();
+	auto ComponentToGrab = HitResult.GetComponent();
+	auto ActorHit = HitResult.GetActor();
 
+	if (ActorHit)
+	{
+		PhysicsHandle->GrabComponent(ComponentToGrab, NAME_None, ComponentToGrab->GetOwner()->GetActorLocation(), true);
+	}
 }
 
 void UGrabber::Release()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Grab key released!"))
+	PhysicsHandle->ReleaseComponent();
 }
 
 void UGrabber::FindPhysicsComponent()
@@ -87,15 +98,13 @@ void UGrabber::BindInputComponent()
 
 const FHitResult UGrabber::ReturnFirstPhysicsBodyinReach()
 {
-	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(OUT PVLocation, OUT PVRotation);
-
-	auto LineTraceEnd = PVLocation + PVRotation.Vector() * CastScalar;
-
+	
+	FVector LTEnd = LineTraceEnd();
 	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
 
 	FHitResult Hit;
 
-	GetWorld()->LineTraceSingleByObjectType(OUT Hit, PVLocation, LineTraceEnd,
+	GetWorld()->LineTraceSingleByObjectType(OUT Hit, PVLocation, LTEnd,
 		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody), TraceParameters);
 
 	AActor* ActorHit = Hit.GetActor();
@@ -108,4 +117,13 @@ const FHitResult UGrabber::ReturnFirstPhysicsBodyinReach()
 
 
 	return Hit;
+}
+
+FVector UGrabber::LineTraceEnd()
+{
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(OUT PVLocation, OUT PVRotation);
+
+	auto LineTraceEnd = PVLocation + PVRotation.Vector() * CastScalar;
+
+	return LineTraceEnd;
 }

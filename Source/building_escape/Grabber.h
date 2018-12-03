@@ -34,6 +34,7 @@ private:
 	void FindPhysicsComponent();
 
 	void BindInputComponent();
+	FVector LineTraceEnd();
 
 	const FHitResult ReturnFirstPhysicsBodyinReach();
 
